@@ -23,7 +23,9 @@ connectDB().then(() => {
 
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5173', "https://placemet-tracker-cefx.vercel.app", "https://placemet-tracker.vercel.app"],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
