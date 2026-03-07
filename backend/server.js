@@ -21,25 +21,10 @@ connectDB().then(() => {
   seedData();
 });
 
-const allowedOrigins = [
-  'https://placemet-tracker.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
-
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
-
-app.options('*', cors()); // allow preflight requests for all routes
-
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -60,4 +45,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-module.exports = app;
