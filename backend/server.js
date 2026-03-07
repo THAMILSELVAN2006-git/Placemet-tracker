@@ -22,7 +22,7 @@ connectDB().then(() => {
 });
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', "https://placemet-tracker-cefx.vercel.app", "https://placemet-tracker.vercel.app"],
   credentials: true
 }));
 app.use(express.json());
