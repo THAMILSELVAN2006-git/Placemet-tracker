@@ -12,9 +12,6 @@ const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
-// Connect to DB (non-blocking, no process.exit)
-connectDB();
-
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -26,8 +23,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check — no DB needed
 app.get('/', (req, res) => {
   res.json({ message: 'Placement Tracker API is running!' });
+});
+
+// Ensure DB is connected before every API request (critical for Vercel cold starts)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB connection failed:', err.message);
+    res.status(500).json({ message: 'Database connection failed. Check MONGODB_URI in environment variables.' });
+  }
 });
 
 app.use('/api/auth', authRoutes);
@@ -39,18 +48,12 @@ app.use('/api/analytics', analyticsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error' });
+  res.status(500).json({ message: err.message || 'Internal server error' });
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err.message);
-});
+process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err.message));
+process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
 
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
-});
-
-// For local development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
