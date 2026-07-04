@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const seedData = require('./seedData');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -10,27 +9,26 @@ const progressRoutes = require('./routes/progress');
 const companyRoutes = require('./routes/companies');
 const feedbackRoutes = require('./routes/feedback');
 const analyticsRoutes = require('./routes/analytics');
-const testRoutes = require('./routes/test');
-const debugRoutes = require('./routes/debug');
-const simpleRoutes = require('./routes/simple');
 
 const app = express();
 
-connectDB().then(() => {
-  // Seed test data after DB connection
-  seedData();
-});
+// Connect to DB (non-blocking, no process.exit)
+connectDB();
 
 app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
     'https://placemet-tracker-cefx.vercel.app',
-    /\.vercel\.app$/
+    'https://placemet-tracker.vercel.app'
   ],
   credentials: true
 }));
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Placement Tracker API is running!' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -38,24 +36,24 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/test', testRoutes);
-app.use('/api/debug', debugRoutes);
-app.use('/api/simple', simpleRoutes);
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Placement Tracker API is running!' });
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Run: npx kill-port ${PORT}`);
-  } else {
-    console.error('Server error:', err.message);
-  }
-  process.exit(1);
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
 });
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;
